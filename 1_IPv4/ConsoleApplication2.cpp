@@ -2,15 +2,19 @@
 #include <fstream>
 #include <string>
 
-struct numbers{
+struct IP_space{
 
-	int* numbers_[4];
+	int numbers_[4];
 
 	
-	bool operator==(numbers first) {
-		return this->numbers_ == first.numbers_;
-
-	}
+	bool operator==(IP_space& other) {
+		for (int i = 0; i < 4; ++i) {
+			if (this->numbers_[i] != other.numbers_[i]) {
+				return false;
+			}
+		}
+		return true;
+	} 
 
 };
 
@@ -19,16 +23,16 @@ struct Node {
 
 
 
-	numbers first_;
+	IP_space first_;
 
-	numbers second_;
+	IP_space second_;
 
 	int count = 0;
 	
 
 	Node* next = nullptr;
 
-	Node(numbers first, numbers second) {
+	Node(IP_space first, IP_space second) {
 		first_ = first;
 		second_ = second;
 		count++;
@@ -45,7 +49,7 @@ struct Lists {
 	Node* began = nullptr;
 
 
-	void add(numbers first, numbers second) {
+	void add(IP_space first, IP_space second) {
 
 		if (began == nullptr) {
 			began = new Node;
@@ -55,19 +59,18 @@ struct Lists {
 		}
 		else {
 
-			Node* work_with = began;
-			while (work_with->next != nullptr) {
-				if (work_with->first_ == first && work_with->second_ == second) {
-					work_with->count++;
+			Node* current = began;
+			while (current != nullptr) {
+				if (current->first_ == first && current->second_ == second) {
+					current->count++;
+					return;
+				}
+				if (current->next == nullptr) {
 					break;
 				}
-				else if (work_with->next == nullptr) {
-					work_with->next = new Node(first,second);
-				}
-
-
-
+				current = current->next;
 			}
+			current->next = new Node(first, second);
 
 
 		}
@@ -79,11 +82,11 @@ struct Lists {
 
 		while (work_with->next!=nullptr)
 		{
-			std::cout << work_with->first_.numbers_[0] << '.' << work_with->first_.numbers_[1] << '.' << work_with->first_.numbers_[2] << '.' << work_with->first_.numbers_[3] << " -> ";
+			std::cout << work_with->first_.numbers_[0] << '.' << work_with->first_.numbers_[1] << '.' << work_with->first_.numbers_[2] << '.' << work_with->first_.numbers_[3] << "\t->\t";
 
-			std::cout << work_with->second_.numbers_[0] << '.' << work_with->second_.numbers_[1] << '.' << work_with->second_.numbers_[2] << '.' << work_with->second_.numbers_[3] << "          ";
+			std::cout << work_with->second_.numbers_[0] << '.' << work_with->second_.numbers_[1] << '.' << work_with->second_.numbers_[2] << '.' << work_with->second_.numbers_[3] << '\t' << '\t';
 
-			std::cout << work_with->count;
+			std::cout << work_with->count << '\n';
 
 
 			work_with = work_with->next;
@@ -91,16 +94,24 @@ struct Lists {
 	}
 };
 
-bool hasIPv4(const unsigned char* ethernetHeader) {
+bool hasIPv4(const unsigned char* ethernet_header) {
 
-	return (ethernetHeader[12] == 0x08 && ethernetHeader[13] == 0x00);
+	return (ethernet_header[12] == 0x08 && ethernet_header[13] == 0x00);
 
 }
 
 int main(int argc, char* argv[]) {
-	
-	std::ifstream file_("C:/Users/Matusha/source/repos/ConsoleApplication3/x64/Debug/packets.sig", std::ios::binary);
-	Lists answer;
+	if (argc != 2) {
+		return 1;
+	}
+
+
+	std::ifstream file_(argv[1], std::ios::binary);
+	if (!file_.is_open()) {
+		return 2;
+	}
+
+	Lists IP_counter_list;
 
 	int packets_processed_ = 0;
 	int packets_containts_ = 0;
@@ -113,45 +124,44 @@ int main(int argc, char* argv[]) {
 
 		
 		
-		unsigned char pocket_info[14];
+		unsigned char packet_info[14];
 		
-		uint16_t pocket_lenght;
+		uint16_t packet_lenght;
 
-		file_.read(reinterpret_cast<char*>(&pocket_lenght), 2);
+		file_.read(reinterpret_cast<char*>(&packet_lenght), sizeof(packet_lenght));
 		
-		file_.read(reinterpret_cast<char*>(pocket_info), 14);
+		file_.read(reinterpret_cast<char*>(packet_info), sizeof(packet_info));
 
-		if (hasIPv4(pocket_info)) {
+		packet_lenght -= sizeof(packet_info);
+
+		if (hasIPv4(packet_info)) {
+
 			packets_containts_++;
 
-			unsigned char* IP_pocket_info[20];
+			unsigned char IP_pocket_info[20]; 
 
-			file_.read(reinterpret_cast<char*>(IP_pocket_info), 20);
+			file_.read(reinterpret_cast<char*>(IP_pocket_info), sizeof(IP_pocket_info));
 
-			numbers Istochnik;
+			packet_lenght -= sizeof(IP_pocket_info);
 
-			numbers Mesto;
+			IP_space source;
+			for (int i = 0; i < 4; ++i) {
+				source.numbers_[i] = static_cast<int>(IP_pocket_info[12 + i]);
+			}
 
-			Istochnik.numbers_[0] = reinterpret_cast<int*>(IP_pocket_info[12]);
-			Istochnik.numbers_[1] = reinterpret_cast<int*>(IP_pocket_info[13]);
-			Istochnik.numbers_[2] = reinterpret_cast<int*>(IP_pocket_info[14]);
-			Istochnik.numbers_[3] = reinterpret_cast<int*>(IP_pocket_info[15]);
+			IP_space Destination;
+			for (int i = 0; i < 4; ++i) {
+				Destination.numbers_[i] = static_cast<int>(IP_pocket_info[16 + i]);
+			}
 
-
-			Mesto.numbers_[0] = reinterpret_cast<int*>(IP_pocket_info[16]);
-			Mesto.numbers_[1] = reinterpret_cast<int*>(IP_pocket_info[17]);
-			Mesto.numbers_[2] = reinterpret_cast<int*>(IP_pocket_info[18]);
-			Mesto.numbers_[3] = reinterpret_cast<int*>(IP_pocket_info[19]);
-
-			answer.add(Istochnik, Mesto);
-
+			IP_counter_list.add(source, Destination);
 		}
 		else {
 			packets_without_++;
 		}
 		packets_processed_++;
 
-		file_.ignore(pocket_lenght - 34);
+		file_.ignore(packet_lenght);
 
 	}
 
@@ -159,7 +169,7 @@ int main(int argc, char* argv[]) {
 
 
 	
-	answer.print();
+	IP_counter_list.print();
 
 	
 	
