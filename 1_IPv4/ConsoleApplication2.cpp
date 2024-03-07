@@ -1,83 +1,165 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <string>
-#include <map>
 
 struct numbers{
 
 	int* numbers_[4];
 
 	
+	bool operator==(numbers first) {
+		return this->numbers_ == first.numbers_;
+
+	}
+
 };
 
 
-void qwe(std::multimap<numbers, numbers> &e, std::multimap<numbers,numbers>::iterator iter) {
-			
+struct Node {
 
+
+
+	numbers first_;
+
+	numbers second_;
+
+	int count = 0;
+	
+
+	Node* next = nullptr;
+
+	Node(numbers first, numbers second) {
+		first_ = first;
+		second_ = second;
+		count++;
+	}
+
+	Node() {
+
+	}
+};
+
+
+struct Lists {
+
+	Node* began = nullptr;
+
+
+	void add(numbers first, numbers second) {
+
+		if (began == nullptr) {
+			began = new Node;
+			began->first_ = first;
+			began->second_ = second;
+			began->count++;
+		}
+		else {
+
+			Node* work_with = began;
+			while (work_with->next != nullptr) {
+				if (work_with->first_ == first && work_with->second_ == second) {
+					work_with->count++;
+					break;
+				}
+				else if (work_with->next == nullptr) {
+					work_with->next = new Node(first,second);
+				}
+
+
+
+			}
+
+
+		}
+
+	}
+
+	void print() {
+		Node* work_with = began;
+
+		while (work_with->next!=nullptr)
+		{
+			std::cout << work_with->first_.numbers_[0] << '.' << work_with->first_.numbers_[1] << '.' << work_with->first_.numbers_[2] << '.' << work_with->first_.numbers_[3] << " -> ";
+
+			std::cout << work_with->second_.numbers_[0] << '.' << work_with->second_.numbers_[1] << '.' << work_with->second_.numbers_[2] << '.' << work_with->second_.numbers_[3] << "          ";
+
+			std::cout << work_with->count;
+
+
+			work_with = work_with->next;
+		}
+	}
+};
+
+bool hasIPv4(const unsigned char* ethernetHeader) {
+
+	return (ethernetHeader[12] == 0x08 && ethernetHeader[13] == 0x00);
 
 }
 
 int main(int argc, char* argv[]) {
 	
-	std::ifstream file_(argv[1]);
-	std::multimap<numbers, numbers> answer;
-
+	std::ifstream file_("C:/Users/Matusha/source/repos/ConsoleApplication3/x64/Debug/packets.sig", std::ios::binary);
+	Lists answer;
 
 	int packets_processed_ = 0;
 	int packets_containts_ = 0;
 	int packets_without_ = 0;
 
-	while (1) {
+	
 
-		char* pocket_lenght_C;
-		
-		file_.read(pocket_lenght_C,2);
-		
-		int16_t pocket_lenght = std::atoi(pocket_lenght_C);
 
-		char* pocket_info = new char[14];
-		
-		file_.read(pocket_info, 14);
+	while (!file_.eof()) {
 
-		if (pocket_info[12] == 0x08 && pocket_info[13] == 0x00) {
+		
+		
+		unsigned char pocket_info[14];
+		
+		uint16_t pocket_lenght;
+
+		file_.read(reinterpret_cast<char*>(&pocket_lenght), 2);
+		
+		file_.read(reinterpret_cast<char*>(pocket_info), 14);
+
+		if (hasIPv4(pocket_info)) {
 			packets_containts_++;
-			char* IP_pocket_info =  new char [20];
 
-			file_.read(IP_pocket_info, 20);
+			unsigned char* IP_pocket_info[20];
+
+			file_.read(reinterpret_cast<char*>(IP_pocket_info), 20);
 
 			numbers Istochnik;
 
 			numbers Mesto;
 
-			Istochnik.numbers_[0] = (int*)std::atoi((const char*)IP_pocket_info[12]);
-			Istochnik.numbers_[1] = (int*)std::atoi((const char*)IP_pocket_info[13]);
-			Istochnik.numbers_[2] = (int*)std::atoi((const char*)IP_pocket_info[14]);
-			Istochnik.numbers_[3] = (int*)std::atoi((const char*)IP_pocket_info[15]);
+			Istochnik.numbers_[0] = reinterpret_cast<int*>(IP_pocket_info[12]);
+			Istochnik.numbers_[1] = reinterpret_cast<int*>(IP_pocket_info[13]);
+			Istochnik.numbers_[2] = reinterpret_cast<int*>(IP_pocket_info[14]);
+			Istochnik.numbers_[3] = reinterpret_cast<int*>(IP_pocket_info[15]);
 
 
-			Mesto.numbers_[0] = (int*)std::atoi((const char*)IP_pocket_info[16]);
-			Mesto.numbers_[1] = (int*)std::atoi((const char*)IP_pocket_info[17]);
-			Mesto.numbers_[2] = (int*)std::atoi((const char*)IP_pocket_info[18]);
-			Mesto.numbers_[3] = (int*)std::atoi((const char*)IP_pocket_info[19]);
+			Mesto.numbers_[0] = reinterpret_cast<int*>(IP_pocket_info[16]);
+			Mesto.numbers_[1] = reinterpret_cast<int*>(IP_pocket_info[17]);
+			Mesto.numbers_[2] = reinterpret_cast<int*>(IP_pocket_info[18]);
+			Mesto.numbers_[3] = reinterpret_cast<int*>(IP_pocket_info[19]);
 
+			answer.add(Istochnik, Mesto);
 
-			answer.insert(Istochnik, Mesto);
 		}
 		else {
 			packets_without_++;
 		}
 		packets_processed_++;
 
+		file_.ignore(pocket_lenght - 34);
 
-
-		if (file_.eof()) break;
 	}
 
-	std::cout << "Packets processed:'\t'" << packets_processed_ << '\n' << "Packets contains IPv4:'\t" << packets_containts_ << '\n' << "Packets without IPv4:'\t'" << packets_without_ << '\n\n';
+	std::cout << "Packets processed:\t" << packets_processed_ << '\n' << "Packets contains IPv4:\t" << packets_containts_ << '\n' << "Packets without IPv4:\t" << packets_without_ << '\n';
 
 
 	
-
+	answer.print();
 
 	
 	
